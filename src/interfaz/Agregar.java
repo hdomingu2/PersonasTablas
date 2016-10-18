@@ -6,8 +6,14 @@
 package interfaz;
 
 import clases.Helper;
-import java.util.ArrayList;
 import clases.Persona;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.ObjectOutputStream;
+import java.util.ArrayList;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javax.swing.JOptionPane;
 
 /**
@@ -19,12 +25,21 @@ public class Agregar extends javax.swing.JDialog {
     /**
      * Creates new form Agregar
      */
+    String ruta;
+    ObjectOutputStream salida;
     ArrayList< Persona> personas;
 
     public Agregar(java.awt.Frame parent, boolean modal) {
         super(parent, modal);
-        initComponents();
-        personas = new ArrayList();
+        ruta = "src/datos/personas.txt";
+        try {
+            personas = Helper.traerDatos(ruta);
+            salida = new ObjectOutputStream(new FileOutputStream(ruta));
+        } catch (IOException ex) {
+            System.out.println(ex.getMessage());
+        }
+        Helper.volcado(salida, personas);
+        Helper.llenarTabla(tblTablaPersonas, ruta);
     }
 
     /**
@@ -94,6 +109,11 @@ public class Agregar extends javax.swing.JDialog {
         jPanel3.add(cmdEliminar, new org.netbeans.lib.awtextra.AbsoluteConstraints(10, 70, 100, -1));
 
         cmdLimpiar.setText("Limpiar");
+        cmdLimpiar.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                cmdLimpiarActionPerformed(evt);
+            }
+        });
         jPanel3.add(cmdLimpiar, new org.netbeans.lib.awtextra.AbsoluteConstraints(10, 110, 100, -1));
 
         jPanel1.add(jPanel3, new org.netbeans.lib.awtextra.AbsoluteConstraints(260, 30, 130, 170));
@@ -152,9 +172,13 @@ public class Agregar extends javax.swing.JDialog {
         apellido = txtApellido.getText();
 
         Persona p = new Persona(cedula, nombre, apellido);
-        personas.add(p);
+        try {
+            p.guardar(salida);
+        } catch (IOException ex) {
+            Logger.getLogger(Agregar.class.getName()).log(Level.SEVERE, null, ex);
+        }
 
-        Helper.llenarTabla(tblTablaPersonas, personas);
+        Helper.llenarTabla(tblTablaPersonas, ruta);
 
         txtCedula.setText("");
         txtNombre.setText("");
@@ -163,34 +187,49 @@ public class Agregar extends javax.swing.JDialog {
     }//GEN-LAST:event_cmdGuardadActionPerformed
 
     private void tblTablaPersonasMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_tblTablaPersonasMouseClicked
-        int i, op;
+        int i;
         Persona p;
-        op = JOptionPane.showConfirmDialog(this, "¿Seguro que desea eliminar a esta persona?", "Eliminar", JOptionPane.YES_NO_OPTION);
-        if (op == JOptionPane.YES_NO_OPTION) {
-            i = tblTablaPersonas.getSelectedRow();
-            personas.remove(i);
-            Helper.llenarTabla(tblTablaPersonas, personas);
-            i = tblTablaPersonas.getSelectedRow();
-            p = personas.get(i);
+        ArrayList<Persona> personas = Helper.traerDatos(ruta);
+        i = tblTablaPersonas.getSelectedRow();
 
-            txtCedula.setText(p.getCedula());
-            txtNombre.setText(p.getNombre());
-            txtApellido.setText(p.getApellido());
-        }
+        p = personas.get(i);
+
+        txtCedula.setText(p.getCedula());
+        txtNombre.setText(p.getNombre());
+        txtApellido.setText(p.getApellido());
     }//GEN-LAST:event_tblTablaPersonasMouseClicked
 
     private void cmdEliminarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_cmdEliminarActionPerformed
-        int i;
-        i = tblTablaPersonas.getSelectedRow();
+        int i, op;
+        op = JOptionPane.showConfirmDialog(this, "¿Seguro que desea eliminar a esta persona?", "Eliminar", JOptionPane.YES_NO_OPTION);
 
-        personas.remove(i);
-        Helper.llenarTabla(tblTablaPersonas, personas);
+        ArrayList<Persona> personas = Helper.traerDatos(ruta);
+        if (op == JOptionPane.YES_OPTION) {
+            i = tblTablaPersonas.getSelectedRow();
+            personas.remove(i);
+            try {
+                salida = new ObjectOutputStream(new FileOutputStream(ruta));
+            } catch (FileNotFoundException ex) {
+                Logger.getLogger(Agregar.class.getName()).log(Level.SEVERE, null, ex);
+            } catch (IOException ex) {
+                Logger.getLogger(Agregar.class.getName()).log(Level.SEVERE, null, ex);
+            }
+            Helper.volcado(salida, personas);
+            Helper.llenarTabla(tblTablaPersonas, ruta);
+            txtCedula.setText("");
+            txtNombre.setText("");
+            txtApellido.setText("");
+            txtCedula.requestFocusInWindow();
+        }
+    }//GEN-LAST:event_cmdEliminarActionPerformed
 
+    private void cmdLimpiarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_cmdLimpiarActionPerformed
         txtCedula.setText("");
         txtNombre.setText("");
         txtApellido.setText("");
+
         txtCedula.requestFocusInWindow();
-    }//GEN-LAST:event_cmdEliminarActionPerformed
+    }//GEN-LAST:event_cmdLimpiarActionPerformed
 
     /**
      * @param args the command line arguments
